@@ -100,10 +100,15 @@ bulb sync starts automatically with `./start_dashboard.sh` (set
 `WIZ_BULB=0` to skip it), or run it standalone alongside the band service:
 
 ```sh
-./venv/bin/python wiz_pulse.py            # auto-discovers the bulb
+./venv/bin/python wiz_pulse.py            # auto-discovers bulb + auto-scales range
 WIZ_IP=192.168.1.4 ./venv/bin/python wiz_pulse.py
-HR_LOW=55 HR_HIGH=140 ./venv/bin/python wiz_pulse.py   # tune the range
+HR_LOW=80 HR_HIGH=115 ./venv/bin/python wiz_pulse.py   # fixed range overrides auto
 ```
+
+By default the colour range **auto-scales** to your recent HR (last 3 min), so
+the full green→red sweep always maps onto your actual fluctuation. A fixed wide
+range like 50–150 would squash a resting HR (say 83–109) into one yellow-green
+colour — making the bulb look stuck. Set `HR_LOW`/`HR_HIGH` to pin a fixed range.
 
 It just reads the latest BPM from `miband.db` and sends UDP colour commands to
 the bulb (WiZ listens on port 38899). The `WizLight` class is reused from my

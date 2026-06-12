@@ -78,11 +78,31 @@ def bpm_to_rgb(bpm: int, low: float, high: float):
     return int(r * 255), int(g * 255), int(b * 255)
 
 
+MIN_SPAN = 16.0  # don't map a tiny HR range across the whole gradient
+
+
+def auto_range(fallback):
+    """Derive the colour range from recent HR so the full green->red sweep
+    maps onto your actual fluctuation (a fixed 50-150 squashes a resting HR
+    into one colour). Returns (low, high)."""
+    vals = [b for _, b in store.recent_readings(180)]
+    if len(vals) < 3:
+        return fallback
+    lo, hi = float(min(vals)), float(max(vals))
+    if hi - lo < MIN_SPAN:
+        mid = (hi + lo) / 2
+        lo, hi = mid - MIN_SPAN / 2, mid + MIN_SPAN / 2
+    return lo, hi
+
+
 def main():
     store.init_db()
-    low = float(os.environ.get("HR_LOW", "50"))
-    high = float(os.environ.get("HR_HIGH", "150"))
-    # Refresh rate of the bulb, and how fast we glide toward a new target.
+    # If HR_LOW/HR_HIGH are set, use them fixed. Otherwise auto-scale.
+    env_low, env_high = os.environ.get("HR_LOW"), os.environ.get("HR_HIGH")
+    auto = env_low is None and env_high is None
+    low = float(env_low) if env_low else 70.0
+    high = float(env_high) if env_high else 110.0
+
     fps = float(os.environ.get("WIZ_FPS", "12"))
     ease = float(os.environ.get("WIZ_EASE", "0.15"))   # 0..1 per frame
     dt = 1.0 / fps
@@ -92,21 +112,27 @@ def main():
         print("No WiZ bulb found. Make sure it's on the same Wi-Fi, or set WIZ_IP.")
         return
     bulb = WizLight(ip)
-    print(f"Gliding bulb {ip} to heart rate ({int(low)}-{int(high)} bpm -> green->red). Ctrl-C to stop.")
+    mode = "auto-scaling" if auto else f"{int(low)}-{int(high)} bpm"
+    print(f"Gliding bulb {ip} to heart rate ({mode}, green->red). Ctrl-C to stop.")
 
     # The displayed colour eases toward the target so the light flows smoothly
-    # between sparse readings instead of snapping. The band only updates BPM
-    # every few seconds; the easing fills the gaps visually.
+    # between sparse readings instead of snapping.
     cur = [0.0, 255.0, 0.0]    # start green (resting)
     last_bpm = None
+    frame = 0
     while True:
+        # Refresh the auto range every ~5s so it tracks your current HR band.
+        if auto and frame % int(fps * 5) == 0:
+            low, high = auto_range((low, high))
+        frame += 1
+
         reading = store.latest_reading()
         fresh = reading and (time.time() - reading[0] < 20)
         if fresh:
             bpm = reading[1]
             target = bpm_to_rgb(bpm, low, high)
             if bpm != last_bpm:
-                print(f"{bpm} bpm -> target rgb{target}")
+                print(f"{bpm} bpm  [{int(low)}-{int(high)}]  -> rgb{target}")
                 last_bpm = bpm
         else:
             target = (40, 0, 80)   # dim purple = no fresh data
