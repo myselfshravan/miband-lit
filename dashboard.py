@@ -39,13 +39,13 @@ with st.sidebar:
             ["sms", "call", "missed_call", "email", "simple"],
             index=0,
         )
-        sent = st.form_submit_button("Send notification", use_container_width=True)
+        sent = st.form_submit_button("Send notification", width='stretch')
         if sent:
             store.add_command("notify", {"text": text, "category": category})
             st.success("Queued — it'll appear on the band in ~1s.")
 
     st.divider()
-    if st.button("📳 Vibrate band", use_container_width=True):
+    if st.button("📳 Vibrate band", width='stretch'):
         store.add_command("vibrate", {"strong": True})
         st.toast("Buzz queued")
 
@@ -93,7 +93,7 @@ def live_view():
             yaxis_title="bpm", xaxis_title=None,
             yaxis=dict(range=[max(0, df["bpm"].min() - 15), df["bpm"].max() + 15]),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     else:
         c2.metric("Current", "—")
         st.info("Waiting for the first reading… make sure the band service is running "
