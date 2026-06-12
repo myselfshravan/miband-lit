@@ -28,8 +28,17 @@ echo "Starting band service (BLE)..."
 SERVICE_PID=$!
 echo "  band service pid $SERVICE_PID (logs: band_service.log)"
 
-# Stop the service when the dashboard exits.
-trap "echo 'Stopping band service...'; kill $SERVICE_PID 2>/dev/null" EXIT INT TERM
+# Optional: drive a WiZ bulb's colour from heart rate (skips if no bulb).
+WIZ_PID=""
+if [ "${WIZ_BULB:-1}" = "1" ]; then
+  echo "Starting WiZ bulb sync..."
+  WIZ_IP="${WIZ_IP:-}" ./venv/bin/python -u wiz_pulse.py > wiz_pulse.log 2>&1 &
+  WIZ_PID=$!
+  echo "  wiz sync pid $WIZ_PID (logs: wiz_pulse.log)"
+fi
+
+# Stop the background processes when the dashboard exits.
+trap "echo 'Stopping...'; kill $SERVICE_PID $WIZ_PID 2>/dev/null" EXIT INT TERM
 
 sleep 3
 echo "Starting dashboard at http://localhost:8501 ..."

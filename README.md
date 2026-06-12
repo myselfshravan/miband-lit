@@ -92,6 +92,38 @@ What the dashboard can do:
 
 Band service log: `band_service.log`. It auto-reconnects if the link drops.
 
+## ⚡ Heart rate → WiZ bulb colour
+
+If you have a WiZ smart bulb on the same Wi-Fi, your heart rate drives its
+colour in real time: calm **blue** at rest → green → yellow → **red** when it
+climbs. The bulb sync starts automatically with `./start_dashboard.sh` (set
+`WIZ_BULB=0` to skip it), or run it standalone alongside the band service:
+
+```sh
+./venv/bin/python wiz_pulse.py            # auto-discovers the bulb
+WIZ_IP=192.168.1.4 ./venv/bin/python wiz_pulse.py
+HR_LOW=55 HR_HIGH=140 ./venv/bin/python wiz_pulse.py   # tune the range
+```
+
+It just reads the latest BPM from `miband.db` and sends UDP colour commands to
+the bulb (WiZ listens on port 38899). The `WizLight` class is reused from my
+[wiz-hack](https://github.com/myselfshravan/wiz-hack) project.
+
+### Hook anything else into the band
+
+The same store is a clean integration point in both directions:
+
+```python
+import store
+# Outbound: buzz your wrist from any script / webhook / cron
+store.add_command("notify", {"text": "Deploy finished ✅", "category": "sms"})
+# Inbound: react to live heart rate
+ts, bpm = store.latest_reading()
+```
+
+So AI-token-usage alerts, CI notifications, or anything with an API can push to
+the band, and anything can react to your heart rate.
+
 ## What actually works (notes from setup)
 
 - **MODE=manual is the default and the one that works.** On this band's

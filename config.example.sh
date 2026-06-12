@@ -7,3 +7,7 @@
 #            huami-token from your Zepp account. See README.
 BAND_UUID="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 AUTH_KEY="00000000000000000000000000000000"
+
+# Optional: WiZ smart bulb IP for the heart-rate-to-light feature.
+# Leave empty to auto-discover on the network.
+WIZ_IP=""
