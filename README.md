@@ -1,8 +1,15 @@
 # miband-lit ⌚️❤️
 
 Read your **Mi Band 5's heart rate live on your Mac** over Bluetooth LE — with a
-Streamlit dashboard, and the ability to push text notifications and vibrations
-to the band. No Zepp app needed once it's working.
+Streamlit dashboard, the ability to push text notifications and vibrations back
+to the band, and (for fun) a heart-rate-driven smart bulb. No Zepp app needed
+once it's working.
+
+> 📖 **The full story / writeup:** [`BLOG.md`](BLOG.md) — how I cracked the auth
+> handshake, fought the sensor, and survived the Bluetooth gremlins.
+
+**Stack:** Python · [`bleak`](https://github.com/hbldh/bleak) (BLE) · Streamlit ·
+SQLite · macOS. Tested on a Mi Band 5; the protocol is shared with Mi Band 4.
 
 ## Setup
 
