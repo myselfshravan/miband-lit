@@ -1,0 +1,7 @@
+bleak>=0.22
+pycryptodome>=3.20
+requests>=2.31
+streamlit>=1.40
+plotly>=5.24
+pandas>=2.2
+loguru>=0.7

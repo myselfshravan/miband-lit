@@ -1,0 +1,20 @@
+# Secrets — never commit
+config.sh
+
+# Python virtualenv (483 MB, recreate with pip install)
+venv/
+__pycache__/
+*.pyc
+
+# Third-party tool, cloned separately (see README)
+huami-token/
+
+# Runtime data / logs
+*.log
+*.db
+*.db-wal
+*.db-shm
+.band_service.lock
+
+# macOS
+.DS_Store
