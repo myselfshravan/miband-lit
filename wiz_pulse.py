@@ -2,7 +2,7 @@
 """Drive a WiZ smart bulb's colour from your live heart rate.
 
 Reads the latest BPM from the shared store (written by band_service.py) and
-maps it to a colour: calm blue at rest, through green/yellow, to red when your
+maps it to a colour: green at rest, through yellow/orange, to red when your
 heart rate climbs. Run it alongside the band service.
 
     ./venv/bin/python wiz_pulse.py            # auto-discover the bulb
@@ -70,10 +70,10 @@ def discover_ip():
 
 
 def bpm_to_rgb(bpm: int, low: float, high: float):
-    """Map BPM to RGB. low->blue (hue 240), high->red (hue 0),
-    passing through cyan/green/yellow/orange."""
+    """Map BPM to RGB. low->green (hue 120), high->red (hue 0),
+    passing through yellow/orange. Higher heart rate = redder."""
     t = max(0.0, min(1.0, (bpm - low) / (high - low)))
-    hue = (240 * (1 - t)) / 360.0          # 240deg (blue) down to 0deg (red)
+    hue = (120 * (1 - t)) / 360.0          # 120deg (green) down to 0deg (red)
     r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
     return int(r * 255), int(g * 255), int(b * 255)
 
@@ -92,12 +92,12 @@ def main():
         print("No WiZ bulb found. Make sure it's on the same Wi-Fi, or set WIZ_IP.")
         return
     bulb = WizLight(ip)
-    print(f"Gliding bulb {ip} to heart rate ({int(low)}-{int(high)} bpm -> blue->red). Ctrl-C to stop.")
+    print(f"Gliding bulb {ip} to heart rate ({int(low)}-{int(high)} bpm -> green->red). Ctrl-C to stop.")
 
     # The displayed colour eases toward the target so the light flows smoothly
     # between sparse readings instead of snapping. The band only updates BPM
     # every few seconds; the easing fills the gaps visually.
-    cur = [0.0, 0.0, 255.0]    # start blue
+    cur = [0.0, 255.0, 0.0]    # start green (resting)
     last_bpm = None
     while True:
         reading = store.latest_reading()

@@ -95,8 +95,8 @@ Band service log: `band_service.log`. It auto-reconnects if the link drops.
 ## ⚡ Heart rate → WiZ bulb colour
 
 If you have a WiZ smart bulb on the same Wi-Fi, your heart rate drives its
-colour in real time: calm **blue** at rest → green → yellow → **red** when it
-climbs. The bulb sync starts automatically with `./start_dashboard.sh` (set
+colour in real time: **green** at rest → yellow → **red** when it climbs. The
+bulb sync starts automatically with `./start_dashboard.sh` (set
 `WIZ_BULB=0` to skip it), or run it standalone alongside the band service:
 
 ```sh
