@@ -24,7 +24,7 @@ if command -v blueutil >/dev/null 2>&1; then
 fi
 
 echo "Starting band service (BLE)..."
-./venv/bin/python -u band_service.py "$BAND_UUID" "$AUTH_KEY" > band_service.log 2>&1 &
+MODE="${MODE:-continuous}" ./venv/bin/python -u band_service.py "$BAND_UUID" "$AUTH_KEY" > band_service.log 2>&1 &
 SERVICE_PID=$!
 echo "  band service pid $SERVICE_PID (logs: band_service.log)"
 

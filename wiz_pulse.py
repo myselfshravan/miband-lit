@@ -82,31 +82,39 @@ def main():
     store.init_db()
     low = float(os.environ.get("HR_LOW", "50"))
     high = float(os.environ.get("HR_HIGH", "150"))
+    # Refresh rate of the bulb, and how fast we glide toward a new target.
+    fps = float(os.environ.get("WIZ_FPS", "12"))
+    ease = float(os.environ.get("WIZ_EASE", "0.15"))   # 0..1 per frame
+    dt = 1.0 / fps
 
     ip = os.environ.get("WIZ_IP") or discover_ip()
     if not ip:
         print("No WiZ bulb found. Make sure it's on the same Wi-Fi, or set WIZ_IP.")
         return
     bulb = WizLight(ip)
-    print(f"Pulsing bulb {ip} to heart rate ({int(low)}-{int(high)} bpm -> blue->red). Ctrl-C to stop.")
+    print(f"Gliding bulb {ip} to heart rate ({int(low)}-{int(high)} bpm -> blue->red). Ctrl-C to stop.")
 
+    # The displayed colour eases toward the target so the light flows smoothly
+    # between sparse readings instead of snapping. The band only updates BPM
+    # every few seconds; the easing fills the gaps visually.
+    cur = [0.0, 0.0, 255.0]    # start blue
     last_bpm = None
-    pulse_up = True
     while True:
         reading = store.latest_reading()
-        # Treat readings older than 20s as stale (no fresh HR).
         fresh = reading and (time.time() - reading[0] < 20)
         if fresh:
             bpm = reading[1]
-            r, g, b = bpm_to_rgb(bpm, low, high)
-            # Subtle "beat": gently oscillate brightness each tick.
-            brightness = 100 if pulse_up else 70
-            pulse_up = not pulse_up
-            bulb.set_color(r, g, b, brightness)
+            target = bpm_to_rgb(bpm, low, high)
             if bpm != last_bpm:
-                print(f"{bpm} bpm -> rgb({r},{g},{b})")
+                print(f"{bpm} bpm -> target rgb{target}")
                 last_bpm = bpm
-        time.sleep(1)
+        else:
+            target = (40, 0, 80)   # dim purple = no fresh data
+
+        # Ease each channel a fraction toward the target every frame.
+        cur = [c + (t - c) * ease for c, t in zip(cur, target)]
+        bulb.set_color(int(cur[0]), int(cur[1]), int(cur[2]), 100)
+        time.sleep(dt)
 
 
 if __name__ == "__main__":

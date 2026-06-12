@@ -55,6 +55,7 @@ AUTH_SEND_ENC = b"\x03\x00"
 HR_STOP_MANUAL = b"\x15\x02\x00"
 HR_STOP_CONT = b"\x15\x01\x00"
 HR_START_MANUAL = b"\x15\x02\x01"
+HR_START_CONT = b"\x15\x01\x01"
 HR_PING = b"\x16"
 
 # Alert Notification Service category ids
@@ -144,17 +145,37 @@ async def run_session(address: str, key: bytes):
                 print(f"HR: {bpm} bpm")
 
         await client.start_notify(UUID_HR_MEASURE, hr_handler)
-        await client.write_gatt_char(UUID_HR_CONTROL, HR_STOP_CONT, response=True)
+        mode = os.environ.get("MODE", "manual").lower()
         await client.write_gatt_char(UUID_HR_CONTROL, HR_STOP_MANUAL, response=True)
-        await client.write_gatt_char(UUID_HR_CONTROL, HR_START_MANUAL, response=True)
-        print("Heart-rate measurement started.")
+        await client.write_gatt_char(UUID_HR_CONTROL, HR_STOP_CONT, response=True)
+        if mode == "continuous":
+            await client.write_gatt_char(UUID_HR_CONTROL, HR_START_CONT, response=True)
+        else:
+            await client.write_gatt_char(UUID_HR_CONTROL, HR_START_MANUAL, response=True)
+        print(f"Heart-rate measurement started (mode={mode}).")
 
-        # Two concurrent loops: HR keepalive/re-trigger, and command draining.
+        # Two concurrent loops: HR keepalive, and command draining.
+        # The band runs a ~15-20s measurement session then stops, so we ping
+        # to keep it alive and restart the session periodically for coverage.
+        start_cmd = HR_START_CONT if mode == "continuous" else HR_START_MANUAL
+        stop_cmd = HR_STOP_CONT if mode == "continuous" else HR_STOP_MANUAL
+        ping_every = float(os.environ.get("HR_PING_EVERY", "10"))
+        restart_every = float(os.environ.get("HR_RESTART", "14"))
+
         async def hr_loop():
+            tick = 2.0
+            t = last_ping = last_restart = 0.0
             while client.is_connected:
-                await asyncio.sleep(10)
-                await client.write_gatt_char(UUID_HR_CONTROL, HR_PING, response=True)
-                await client.write_gatt_char(UUID_HR_CONTROL, HR_START_MANUAL, response=True)
+                await asyncio.sleep(tick)
+                t += tick
+                if t - last_ping >= ping_every:
+                    await client.write_gatt_char(UUID_HR_CONTROL, HR_PING, response=True)
+                    last_ping = t
+                if t - last_restart >= restart_every:
+                    # Re-kick the measurement WITHOUT a STOP first — issuing STOP
+                    # mid-session reliably kills the stream on this firmware.
+                    await client.write_gatt_char(UUID_HR_CONTROL, start_cmd, response=True)
+                    last_restart = t
 
         async def command_loop():
             while client.is_connected:

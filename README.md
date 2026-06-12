@@ -126,14 +126,18 @@ the band, and anything can react to your heart rate.
 
 ## What actually works (notes from setup)
 
-- **MODE=manual is the default and the one that works.** On this band's
-  firmware, the "continuous" HR command is accepted but never powers the
-  optical sensor (LEDs stay off, readings are all 0). Manual measurement,
-  re-triggered on a timer, is what fires the sensor. Override with
-  `MODE=continuous ./venv/bin/python heartrate.py ...` if you ever want to test.
-- **Cadence:** manual mode yields a reading roughly every 5–10s, not truly
-  per-second. Good enough for live monitoring; per-second isn't available
-  without the sensor engaging in continuous mode.
+- **Two HR modes, both flaky.** `MODE=manual` fires the sensor in short
+  bursts; `MODE=continuous` (the dashboard default) streams real values about
+  every 3s. Either way the band runs a ~15–20s measurement *session* then
+  stops. Re-issuing `START` re-kicks it; issuing `STOP` mid-session reliably
+  kills the stream, so the service never sends `STOP` while running.
+- **Cadence ceiling ≈ one reading every few seconds — NOT per-beat.** The Mi
+  Band 5 reports an *averaged BPM*, not individual beat timing (no RR-interval
+  data over BLE), and even that arrives in unreliable bursts. True per-beat is
+  not possible with this hardware.
+- **Smoothing fills the gaps.** `wiz_pulse.py` eases the bulb colour toward the
+  latest reading at ~12 fps (`WIZ_FPS` / `WIZ_EASE`), so the light *glides*
+  between sparse readings and looks continuous even though the data is coarse.
 
 ## Manual invocation (without the launcher)
 
