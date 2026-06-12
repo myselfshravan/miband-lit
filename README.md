@@ -72,9 +72,14 @@ notifications and vibrations to the band.
 ./start_dashboard.sh
 ```
 
-This cycles Bluetooth, starts the **band service** (which owns the BLE
-connection and writes to `miband.db`), then opens the dashboard at
-http://localhost:8501. Stop everything with Ctrl-C in that terminal.
+This cycles Bluetooth and starts everything: the **band service** (BLE), the
+**WiZ bulb sync**, and **Streamlit** all run in the background, while a live
+**hacker-style console feed** (`console.py`) takes the foreground terminal —
+streaming a colour-coded line per heartbeat with trend arrows and the live bulb
+colour. The dashboard is at http://localhost:8501. Ctrl-C stops everything.
+
+Great for demos: hold your breath, watch the BPM dip in the terminal feed, then
+point at the dashboard chart, the band, and the light all moving together.
 
 Architecture (why two processes):
 - `band_service.py` holds the single BLE connection, streams HR into a shared
